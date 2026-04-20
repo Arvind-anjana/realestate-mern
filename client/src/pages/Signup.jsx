@@ -43,7 +43,6 @@ export default function Signup() {
       setError(null);
       navigate('/signin');
 
-
     } catch (error) {
       setLoading(false);
       setError(error.message);
