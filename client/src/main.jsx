@@ -7,11 +7,21 @@ import {persistor, store} from "./redux/store.js";
 import { Provider } from 'react-redux';
 import {PersistGate} from 'redux-persist/integration/react';
 
+import { FaSpinner } from 'react-icons/fa';
+
+function LoadingSpinner() {
+  return (
+    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+      <FaSpinner className="animate-spin" size={40} />
+    </div>
+  );
+}
+
 
 createRoot(document.getElementById('root')).render(
   
     <Provider store={store}>
-      <PersistGate loading={null} persistor={persistor}>
+      <PersistGate loading={<LoadingSpinner/>} persistor={persistor}>
          <App />
       </PersistGate>
    
