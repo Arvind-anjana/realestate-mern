@@ -62,8 +62,8 @@ export const googleAuth = async(req,res,next) => {
                 password : hashedPassword,
                 photo: req.body.photo,
             });
-            await newUser.save();
-            const token = jwt.sign({id: newUser._id}, process.env.JWT_SECRET);
+            const savedUser = await newUser.save();
+            const token = jwt.sign({id: savedUser._id}, process.env.JWT_SECRET);
             const {password : pass, ...otherDetails} = savedUser._doc;
             res
                 .cookie('access_token', token, { httpOnly : true,/* expires : new Date(Date.now() + 24 * 60 * 60 * 1000), // 1 day */})
@@ -78,3 +78,4 @@ export const googleAuth = async(req,res,next) => {
         
     }
 }
+
