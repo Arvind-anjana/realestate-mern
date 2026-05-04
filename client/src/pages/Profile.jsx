@@ -3,7 +3,7 @@ import { useRef } from 'react';
 import { useSelector } from 'react-redux';
 import { useState , useEffect} from 'react';
 import { useDispatch } from 'react-redux';
-import { updateUserStart ,updateUserFailure , updateUserSuccess } from '../redux/user/userSlice.js';
+import { updateUserStart ,updateUserFailure , updateUserSuccess ,deleteUserFailure,deleteUserStart,deleteUserSuccess } from '../redux/user/userSlice.js';
 
 
 export default function Profile() {
@@ -77,13 +77,9 @@ const handleFileUpload = async (file) => {
   };
 
 
-
-
   const handlechange = (e) => {
     setFormData({...formData, [e.target.id] : e.target.value});
   } 
-
-
 
 
   const handleSubmit = async(e) => {
@@ -109,6 +105,30 @@ const handleFileUpload = async (file) => {
     } catch (error) {
       dispatch(updateUserFailure(error.message));
     }
+  }
+
+  const handleDeleteUser= async(e)=>{
+
+    const confirmed = window.confirm("Are you sure you want to delete your account? This action cannot be undone.");
+    if(!confirmed) return;
+    
+    try {
+      dispatch(deleteUserStart());
+      
+      const res= await fetch(`/api/user/delete/${currentUser._id}`,{
+        method :`DELETE`,
+        
+      });
+      const data = await res.json();
+      if(data.success=== false){
+        dispatch(deleteUserFailure(data.message));
+        return;
+      }
+      dispatch(deleteUserSuccess(data));
+    } catch (error) {
+      dispatch(deleteUserFailure(error.message));
+    }
+    
   }
 
   return (
@@ -153,7 +173,7 @@ const handleFileUpload = async (file) => {
       </form>
 
       <div className='flex justify-between items-center mt-5'>
-        <span className='text-red-700 cursor-pointer'>Delete Account</span>
+        <span onClick={handleDeleteUser} className='text-red-700 cursor-pointer'>Delete Account</span>
         <span className='text-red-700 cursor-pointer'>Sign out</span>
       </div>
        <p className='text-red-700 mt-3'>{error ? error : ""}</p>
