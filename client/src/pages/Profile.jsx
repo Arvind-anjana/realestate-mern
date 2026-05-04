@@ -2,15 +2,20 @@ import React from 'react';
 import { useRef } from 'react';
 import { useSelector } from 'react-redux';
 import { useState , useEffect} from 'react';
+import { useDispatch } from 'react-redux';
+import { updateUserStart ,updateUserFailure , updateUserSuccess } from '../redux/user/userSlice.js';
 
 
 export default function Profile() {
-  const {currentUser} = useSelector((state) => state.user); 
+  const {currentUser ,loading , error} = useSelector((state) => state.user); 
   const fileRef = useRef(null);
   const [file, setFile] = useState(null);
   const [imageUploadProgress, setImageUploadProgress] = useState(0);
   const [imageUploadError, setImageUploadError] = useState(false);
   const [formData, setFormData] = useState({});
+  const dispatch = useDispatch();
+
+  const [updateSucess, setUpdateSuccess] = useState(false);
   // console.log(file);
 
 
@@ -22,12 +27,10 @@ export default function Profile() {
 
 
 
-
-
 const handleFileUpload = async (file) => {
   const cloudName = import.meta.env.VITE_CLOUDINARY_NAME;
   const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
- const maxSize = 2 * 1024 * 1024; // 2MB limit
+  const maxSize = 2 * 1024 * 1024; // 2MB limit
   if (file.size > maxSize) {
     setImageUploadError("File too large (Max 2MB)");
     return;
@@ -76,12 +79,42 @@ const handleFileUpload = async (file) => {
 
 
 
+  const handlechange = (e) => {
+    setFormData({...formData, [e.target.id] : e.target.value});
+  } 
 
+
+
+
+  const handleSubmit = async(e) => {
+    e.preventDefault();
+    try {
+      dispatch(updateUserStart());
+      // Make API call to update user details
+      const res = await fetch(`/api/user/update/${currentUser._id}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+      const data = await res.json();
+      if(data.success===false){
+        dispatch(updateUserFailure(data.message || "Failed to update profile"));
+        return;
+      }
+      dispatch(updateUserSuccess(data));
+      setUpdateSuccess(true);
+
+    } catch (error) {
+      dispatch(updateUserFailure(error.message));
+    }
+  }
 
   return (
     <div className='p-3 max-w-lg mx-auto '>
       <h1 className='font-semibold text-3xl  text-center'>Profile</h1>
-      <form className='flex flex-col gap-4'>
+      <form onSubmit={handleSubmit} className='flex flex-col gap-4'>
         
         <input onChange={(e)=>setFile(e.target.files[0])} type="file" ref={fileRef}  hidden accept='image/*'/>
 
@@ -100,19 +133,31 @@ const handleFileUpload = async (file) => {
           imageUploadProgress === 100 ? <span className='text-green-700'>Upload complete!</span> : null }  
         </p>
 
-        <input type="text" placeholder='username' id='username'
+        <input type="text" placeholder='username' id='username' defaultValue={currentUser.username}
+         onChange={handlechange}
          className='border-t p-3 rounded-lg shadow-2xl' />
-        <input type="email" placeholder='email' id='email'
+
+        <input type="email" placeholder='email' id='email' defaultValue={currentUser.email}
+                 onChange={handlechange}
+
          className='border-t p-3 rounded-lg shadow-2xl' />
+
         <input type="password" placeholder='password' id='password'
+                 onChange={handlechange}
+
          className='border-t p-3 rounded-lg shadow-2xl' />
-         <button className='bg-slate-700 text-white rounded-lg p-3 uppercase hover:opacity-95 disabled:opacity-80'>Update</button>
+
+         <button disabled={loading} className='bg-slate-700 text-white rounded-lg p-3 uppercase hover:opacity-95 disabled:opacity-80'>
+          {loading ? "Updating..." : "Update Profile"}
+         </button>
       </form>
 
       <div className='flex justify-between items-center mt-5'>
         <span className='text-red-700 cursor-pointer'>Delete Account</span>
         <span className='text-red-700 cursor-pointer'>Sign out</span>
       </div>
+       <p className='text-red-700 mt-3'>{error ? error : ""}</p>
+       <p className='text-green-700 mt-3'>{updateSucess ? "user is updated successfully":""}</p>
     </div>
   )
 }
