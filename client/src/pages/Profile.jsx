@@ -60,7 +60,6 @@ const handleFileUpload = async (file) => {
       });
 
       const cloudData = await res.json();
-      console.log(cloudData);
       
       
       if (!res.ok) {

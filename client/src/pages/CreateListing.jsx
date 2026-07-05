@@ -1,6 +1,83 @@
 import React from 'react';
+import { useState } from 'react';
 
 export default function CreateListing() {
+    const [files, setFiles] = useState([]);
+    const [imageUploadError, setImageUploadError] = useState(false);
+    const [uploading , setUploading] = useState(false);
+    const [formData, setFormData] = useState({
+        imageUrls: [],
+    });
+    console.log(formData);
+
+    const handleImageSubmit= (e)=> {
+        if(files.length >0 && files.length<7){
+
+            setUploading(true);
+            setImageUploadError(false);
+
+            const promises=[];
+            for(let i=0; i<files.length; i++){
+                promises.push(storeImage(files[i]));
+            }
+            Promise.all(promises)
+            .then((urls)=>{
+                setFormData((prevData)=>({
+                    ...prevData,
+                    imageUrls: formData.imageUrls.concat(urls) ,
+                }));
+                setImageUploadError(false);
+                setUploading(false);
+            })
+            .catch((error)=>{
+                setImageUploadError("Error uploading images. Please try again.");
+                console.error("Error uploading images:", error);
+            });
+        } else {
+            setImageUploadError("Please select between 1 and 6 images.");
+            setUploading(false);
+        }
+    };
+
+    const storeImage = async (file) => {
+        return new Promise(async (resolve, reject) => {
+            const cloudName = import.meta.env.VITE_CLOUDINARY_NAME;
+            const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
+            const maxSize = 2 * 1024 * 1024;
+            if (file.size > maxSize  || !file.type.startsWith("image/")) {
+               return reject(new Error("Invalid file size or type"));       
+                }
+
+          const data = new FormData();
+            data.append('file', file);
+            data.append('upload_preset', uploadPreset); // Replace with your preset
+            data.append('cloud_name', cloudName); // Replace with your cloud name
+
+            try {
+            const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,{
+                method: 'POST',
+                body: data,
+            });
+            const cloudData =  await res.json();
+            if (res.ok) {
+                    resolve(cloudData.secure_url);
+                } else {
+                    reject(cloudData.error);
+                }
+            }catch (error) {
+                reject(error);
+            }
+        });
+    }
+
+    const handleRemoveImage = (index) => {
+        setFormData((prevData) => ({
+            ...prevData,
+            imageUrls: prevData.imageUrls.filter((_, i) => i !== index),
+        }));
+    }
+        
+
   return (
     <main className='p-3 max-w-4xl mx-auto'>
       <h1 className= 'text-3xl font-semibold text-center my-7'>Create a listing </h1>
@@ -71,15 +148,24 @@ export default function CreateListing() {
             <span className='font-normal text-gray-600 ml-2'>The first image will be the cover (max 6)</span>
         
         <div className='flex gap-4'>
-            <input className='p-3 border border-gray-300 rounded w-full' type="file" id='images' accept='image/*' multiple />
-            <button className='p-3 text-green-700 border border-green-700 rounded uppercase hover:shadow-lg diabled:opacity-80'>Upload</button>
+            <input onChange={(e)=>setFiles(e.target.files)} className='p-3 border border-gray-300 rounded w-full' type="file" id='images' accept='image/*' multiple />
+            <button disabled={uploading} type='button' onClick={handleImageSubmit} className='p-3 text-green-700 border border-green-700 rounded uppercase hover:shadow-lg diabled:opacity-80'>{uploading ? "Uploading..." : "Upload"}</button>
         </div>
+                 <p className='text-red-700 mt-3 text-sm'>{imageUploadError ? imageUploadError : ""}</p>
+                    {
+                        formData.imageUrls.length > 0 && formData.imageUrls.map((url,index)=>( 
+                            <div key={url} className='flex justify-between p-3 border items-centre'>
+                                <img src={url} key={url} alt="listing image" className='w-20 h-20 object-contain rounded-lg' />
+                                <button type='button' onClick={()=>handleRemoveImage(index)} className='p-3 bg-red-700 text-white rounded-lg uppercase hover:shadow-lg'>Delete</button>
+                            </div>
+                            
+
+                        ))
+                    }
         <button className='p-3 bg-slate-700 text-white rounded-lg uppercase hover:opacity-95 disabled:opacity-80'>Create Listing</button>
         </div>
 
-
       </form>
-
 
     </main>
   )
