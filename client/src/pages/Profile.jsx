@@ -4,6 +4,7 @@ import { useSelector } from 'react-redux';
 import { useState , useEffect} from 'react';
 import { useDispatch } from 'react-redux';
 import { updateUserStart ,updateUserFailure , updateUserSuccess ,deleteUserFailure,deleteUserStart,deleteUserSuccess, signOutUserStart , signOutUserSuccess , signOutUserFailure} from '../redux/user/userSlice.js';
+import { Link } from 'react-router-dom';
 
 
 export default function Profile() {
@@ -185,6 +186,9 @@ const handleFileUpload = async (file) => {
          <button disabled={loading} className='bg-slate-700 text-white rounded-lg p-3 uppercase hover:opacity-95 disabled:opacity-80'>
           {loading ? "Updating..." : "Update Profile"}
          </button>
+         <Link to='/create-listing' className='bg-green-700 text-white rounded-lg p-3 uppercase hover:opacity-95 text-center'>
+           Create Listing
+         </Link>
       </form>
 
       <div className='flex justify-between items-center mt-5'>
