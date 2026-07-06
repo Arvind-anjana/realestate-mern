@@ -1,11 +1,10 @@
-import React from 'react';
+import React, { use } from 'react';
 import { useRef } from 'react';
 import { useSelector } from 'react-redux';
 import { useState , useEffect} from 'react';
 import { useDispatch } from 'react-redux';
 import { updateUserStart ,updateUserFailure , updateUserSuccess ,deleteUserFailure,deleteUserStart,deleteUserSuccess, signOutUserStart , signOutUserSuccess , signOutUserFailure} from '../redux/user/userSlice.js';
 import { Link } from 'react-router-dom';
-
 
 export default function Profile() {
   const {currentUser ,loading , error} = useSelector((state) => state.user); 
@@ -14,9 +13,14 @@ export default function Profile() {
   const [imageUploadProgress, setImageUploadProgress] = useState(0);
   const [imageUploadError, setImageUploadError] = useState(false);
   const [formData, setFormData] = useState({});
+  const [showListingError, setShowListingError] = useState(false);
   const dispatch = useDispatch();
 
   const [updateSucess, setUpdateSuccess] = useState(false);
+  const [userListings, setUserListings] = useState([]);
+
+
+
   // console.log(file);
 
 
@@ -146,6 +150,47 @@ const handleFileUpload = async (file) => {
     }
   }
 
+  const handleShowListings = async() => {
+    try {
+      setShowListingError(false);
+      const res = await fetch(`/api/user/listings/${currentUser._id}`);
+      const data = await res.json();
+      if(data.success === false){
+        setShowListingError(true);
+        return;
+      }
+      setUserListings(data);
+    } catch (error) {
+      setShowListingError(true);
+    }
+  }
+
+  const handleListingDelete = async(listingId) => {
+    const confirmed = window.confirm("Are you sure you want to delete this listing? This action cannot be undone.");
+    if(!confirmed) return;
+    try {
+      const res = await fetch(`/api/listing/delete/${listingId}`, {
+        method: 'DELETE',
+      });
+      const data = await res.json();
+      if(data.success === false){
+        alert(data.message || "Failed to delete listing");
+        return;
+      }
+      setUserListings((prevListings) => prevListings.filter((listing) => listing._id !== listingId));
+
+      alert("Listing  deleted successfully");
+      // Remove the deleted listing from the state
+      
+    } catch (error) {
+      alert("Failed to delete listing");
+    }
+  }
+
+
+
+
+
   return (
     <div className='p-3 max-w-lg mx-auto '>
       <h1 className='font-semibold text-3xl  text-center'>Profile</h1>
@@ -196,6 +241,40 @@ const handleFileUpload = async (file) => {
       </div>
        <p className='text-red-700 mt-3'>{error ? error : ""}</p>
        <p className='text-green-700 mt-3'>{updateSucess ? "user is updated successfully":""}</p>
+
+       <button onClick={handleShowListings} className='text-green-700 w-full'>
+        Show Listings
+       </button>
+
+       <p className='text-red-500 mt-5'>
+        {showListingError ? "Error showing listings" : ""}
+       </p>
+
+       {userListings && userListings.length > 0 && 
+       <div className='flex flex-col gap-4'>
+        <h1 className='text-center mt-7 text-2xl font-semibold'>Your Listings</h1>
+        {userListings.map((listing) => (
+
+        <div key={listing._id} className='border p-3 rounded-lg  flex justify-between items-center gap-4'>
+          <Link to={`/listing/${listing._id}`}>
+            <img src={listing.imageUrls[0]} alt="listing cover" className='h-16 w-16 object-contain '/>
+          </Link>
+          <Link to={`/listing/${listing._id}`} className='text-slate-700 font-semibold flex-1 hover:underline truncate'>
+          <p >{listing.name}</p>
+          </Link>
+
+          <div className='flex flex-col item-center'>
+            <button onClick={() => handleListingDelete(listing._id)} className='text-red-700 uppercase'>Delete</button>
+            <Link to={`/update-listing/${listing._id}`} className='text-green-700 uppercase'>Edit</Link>
+          </div>
+
+
+        </div>
+       ))}
+       </div>}
+       
+
+
     </div>
   )
 }
