@@ -2,6 +2,7 @@ import express from 'express';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import cookieParser from 'cookie-parser';
+import path from 'path';
 
 // routers import here
 import userRoute from './routes/user.route.js';
@@ -21,6 +22,8 @@ mongoose.connect(process.env.MONGO)
     console.error(err.message);
   });
 
+  const __dirname = path.resolve();
+
 app.listen(5000, () => {
   console.log('Server is running on port 5000:');
 });
@@ -28,6 +31,12 @@ app.listen(5000, () => {
 app.use("/api/user", userRoute);
 app.use("/api/auth", authRouter);
 app.use("/api/listing", listingRouter);
+
+app.use(express.static(path.join(__dirname, '/client/dist')));
+
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'client', 'dist', 'index.html'));
+});
 
 app.use((err, req, res, next) => {
   const statusCode = err.statusCode || 500;
